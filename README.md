@@ -35,7 +35,7 @@ This package is prepared to be published as `@bellx2/upnote-mcp`.
 
 If your database lives somewhere else, set `UPNOTE_DB`.
 
-## Setup
+## Install
 
 ```bash
 bun install
@@ -47,7 +47,7 @@ bun install
 bun run start
 ```
 
-You can also run the published package through:
+For normal use, prefer the published package:
 
 ```bash
 bunx @bellx2/upnote-mcp
@@ -91,7 +91,37 @@ If you deny these permissions, note search and retrieval will not work. After gr
 
 ## MCP Config Example
 
-### Cursor
+### Recommended: published package
+
+#### Cursor
+
+```json
+{
+  "mcpServers": {
+    "upnote": {
+      "command": "bunx",
+      "args": ["@bellx2/upnote-mcp"]
+    }
+  }
+}
+```
+
+#### Claude Desktop
+
+```json
+{
+  "mcpServers": {
+    "upnote": {
+      "command": "bunx",
+      "args": ["@bellx2/upnote-mcp"]
+    }
+  }
+}
+```
+
+### Local development checkout
+
+#### Cursor
 
 ```json
 {
@@ -104,44 +134,27 @@ If you deny these permissions, note search and retrieval will not work. After gr
 }
 ```
 
-### Claude Desktop
+#### Claude Desktop
 
 ```json
 {
   "mcpServers": {
     "upnote": {
-      "command": "bunx",
-      "args": ["@bellx2/upnote-mcp"]
+      "command": "/Users/bell/.local/share/mise/installs/bun/latest/bin/bun",
+      "args": ["run", "/Users/bell/dev/t7b/upnote_mcp/src/index.ts"]
     }
   }
 }
 ```
 
-### Cursor (published package)
+## Example Workflows
 
-```json
-{
-  "mcpServers": {
-    "upnote": {
-      "command": "bunx",
-      "args": ["@bellx2/upnote-mcp"]
-    }
-  }
-}
-```
+Try prompts like:
 
-### Claude Desktop (published package)
-
-```json
-{
-  "mcpServers": {
-    "upnote": {
-      "command": "bunx",
-      "args": ["@bellx2/upnote-mcp"]
-    }
-  }
-}
-```
+- `Search UpNote for "travel" and show me the first result`
+- `List my UpNote tags and open the note that matches the tag "meeting"`
+- `Find notes about "launch", summarize them, and create a new UpNote note with the summary`
+- `List notebooks and open the one named "Research"`
 
 ## Tool Reference
 
@@ -232,14 +245,6 @@ Input:
 bun run check
 bun run smoke
 ```
-
-## Publishing
-
-```bash
-npm publish
-```
-
-Make sure the `@bellx2` scope is available in your npm account before publishing.
 
 ## Japanese README
 
