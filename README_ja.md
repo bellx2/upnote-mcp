@@ -51,6 +51,17 @@ bun run dev
 export UPNOTE_DB="$HOME/Library/Containers/com.getupnote.desktop/Data/Library/Application Support/UpNote/upnote.sqlite3"
 ```
 
+## 権限
+
+初回起動時に、MCP クライアント側でコマンド実行やローカルファイルアクセスの権限ダイアログが表示されることがあります。
+
+これはこのサーバーが次を行うためで、正常な挙動です。
+
+- `bun` で起動する
+- ローカルの UpNote SQLite データベースを読む
+
+この権限を拒否すると、ノート検索や本文取得は動作しません。許可後は、Cursor や Claude Desktop で MCP サーバーを再起動してください。
+
 ## Cursor の MCP 設定例
 
 ```json

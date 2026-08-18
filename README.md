@@ -73,6 +73,17 @@ Example:
 export UPNOTE_DB="$HOME/Library/Containers/com.getupnote.desktop/Data/Library/Application Support/UpNote/upnote.sqlite3"
 ```
 
+## Permissions
+
+On first run, your MCP client may show permission prompts for command execution and local file access.
+
+This is expected because the server:
+
+- launches through `bun`
+- reads your local UpNote SQLite database
+
+If you deny these permissions, note search and retrieval will not work. After granting access, you may need to restart the MCP server in Cursor or Claude Desktop.
+
 ## MCP Config Example
 
 ### Cursor
