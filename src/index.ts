@@ -1,7 +1,17 @@
+import { $ } from "bun";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { UpNoteRepository, noteUrl, notebookUrl, tagUrl, type NotebookResult, type TagResult } from "./upnote";
+import {
+  createNoteUrl,
+  noteUrl,
+  notebookUrl,
+  tagUrl,
+  UpNoteRepository,
+  type CreateNoteParams,
+  type NotebookResult,
+  type TagResult,
+} from "./upnote";
 
 const repository = new UpNoteRepository();
 
@@ -66,6 +76,18 @@ function formatNoteDetail(note: ReturnType<UpNoteRepository["getNote"]>): string
   ].join("\n");
 }
 
+async function openUpNoteUrl(url: string): Promise<void> {
+  await $`open ${url}`.quiet();
+}
+
+function formatOpenResult(label: string, url: string): string {
+  return [`Opened ${label} in UpNote.`, `url: ${url}`].join("\n");
+}
+
+function formatCreateResult(url: string): string {
+  return [`Created a note in UpNote using the official URL scheme.`, `url: ${url}`].join("\n");
+}
+
 async function main(): Promise<void> {
   const server = new McpServer({
     name: "upnote-reader",
@@ -108,6 +130,33 @@ async function main(): Promise<void> {
   );
 
   server.registerTool(
+    "open_note",
+    {
+      description: [
+        "Open an existing UpNote note in the UpNote desktop app by note ID.",
+        "Use an ID returned from search_notes or search_by_tag.",
+        "This launches UpNote through the official URL scheme.",
+      ].join(" "),
+      inputSchema: {
+        id: z.string().min(1).describe("Note ID returned by search_notes or search_by_tag"),
+      },
+    },
+    async ({ id }) => {
+      const url = noteUrl(id);
+      await openUpNoteUrl(url);
+
+      return {
+        content: [{ type: "text", text: formatOpenResult(`note ${id}`, url) }],
+        structuredContent: {
+          id,
+          url,
+          executed: true,
+        },
+      };
+    },
+  );
+
+  server.registerTool(
     "get_note",
     {
       description: [
@@ -139,6 +188,33 @@ async function main(): Promise<void> {
   );
 
   server.registerTool(
+    "open_notebook",
+    {
+      description: [
+        "Open an existing UpNote notebook in the UpNote desktop app by notebook ID.",
+        "Use an ID returned from list_notebooks.",
+        "This launches UpNote through the official URL scheme.",
+      ].join(" "),
+      inputSchema: {
+        id: z.string().min(1).describe("Notebook ID returned by list_notebooks"),
+      },
+    },
+    async ({ id }) => {
+      const url = notebookUrl(id);
+      await openUpNoteUrl(url);
+
+      return {
+        content: [{ type: "text", text: formatOpenResult(`notebook ${id}`, url) }],
+        structuredContent: {
+          id,
+          url,
+          executed: true,
+        },
+      };
+    },
+  );
+
+  server.registerTool(
     "list_notebooks",
     {
       description: [
@@ -156,6 +232,48 @@ async function main(): Promise<void> {
           count: notebooks.length,
           notebooks,
           dbPath: repository.getResolvedDbPath(),
+        },
+      };
+    },
+  );
+
+  server.registerTool(
+    "create_note",
+    {
+      description: [
+        "Create a new UpNote note through the official URL scheme.",
+        "Use this when you want to save generated text or draft content into UpNote safely without writing to the SQLite database directly.",
+        "At least one of title or text must be provided.",
+      ].join(" "),
+      inputSchema: {
+        title: z.string().optional().describe("Optional note title"),
+        text: z.string().optional().describe("Optional note body text"),
+        notebook: z.string().optional().describe("Optional target notebook name"),
+        markdown: z.boolean().optional().describe("Whether the text should be treated as Markdown. Defaults to true"),
+        newWindow: z.boolean().optional().describe("Whether UpNote should open the note in a new window. Defaults to false"),
+      },
+    },
+    async ({ title, text, notebook, markdown, newWindow }) => {
+      if (!title && !text) {
+        throw new Error("create_note requires at least one of title or text.");
+      }
+
+      const params: CreateNoteParams = {
+        title,
+        text,
+        notebook,
+        markdown: markdown ?? true,
+        newWindow: newWindow ?? false,
+      };
+      const url = createNoteUrl(params);
+      await openUpNoteUrl(url);
+
+      return {
+        content: [{ type: "text", text: formatCreateResult(url) }],
+        structuredContent: {
+          url,
+          executed: true,
+          params,
         },
       };
     },

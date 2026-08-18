@@ -40,6 +40,14 @@ export type TagResult = {
   updatedAt: string | null;
 };
 
+export type CreateNoteParams = {
+  title?: string;
+  text?: string;
+  notebook?: string;
+  markdown?: boolean;
+  newWindow?: boolean;
+};
+
 type SearchNoteRow = {
   id: string;
   title: string | null;
@@ -99,6 +107,31 @@ export function notebookUrl(notebookId: string): string {
 export function tagUrl(tagTitle: string): string {
   const tag = tagTitle.replace(/^#/, "");
   return `upnote://x-callback-url/tag/view?tag=${encodeURIComponent(tag)}`;
+}
+
+export function createNoteUrl(params: CreateNoteParams): string {
+  const searchParams = new URLSearchParams();
+
+  if (params.title) {
+    searchParams.set("title", params.title);
+  }
+  if (params.text) {
+    searchParams.set("text", params.text);
+  }
+  if (params.notebook) {
+    searchParams.set("notebook", params.notebook);
+  }
+  if (params.markdown !== undefined) {
+    searchParams.set("markdown", String(params.markdown));
+  }
+  if (params.newWindow !== undefined) {
+    searchParams.set("new_window", String(params.newWindow));
+  }
+
+  const query = searchParams.toString();
+  return query
+    ? `upnote://x-callback-url/note/new?${query}`
+    : "upnote://x-callback-url/note/new";
 }
 
 function createMissingDbMessage(dbPath: string): string {
