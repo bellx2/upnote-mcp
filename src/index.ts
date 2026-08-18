@@ -10,6 +10,7 @@ import {
   tagUrl,
   UpNoteRepository,
   type CreateNoteParams,
+  type FindNotesParams,
   type NotebookResult,
   type TagResult,
 } from "./upnote";
@@ -27,7 +28,7 @@ function formatSearchResults(query: string, notes: ReturnType<UpNoteRepository["
       [
         `${index + 1}. ${note.title}`,
         `id: ${note.id}`,
-        `url: ${noteUrl(note.id)}`,
+        `url: ${note.url}`,
         `updatedAt: ${note.updatedAt ?? "unknown"}`,
         note.preview ? `preview: ${note.preview}` : "preview: none",
       ].join("\n"),
@@ -45,7 +46,7 @@ function formatNotebooks(notebooks: NotebookResult[]): string {
       [
         `- ${nb.title}`,
         `  id: ${nb.id}`,
-        `  url: ${notebookUrl(nb.id)}`,
+        `  url: ${nb.url}`,
         `  noteCount: ${nb.noteCount}`,
         nb.parent ? `  parent: ${nb.parent}` : "",
       ]
@@ -61,7 +62,7 @@ function formatTags(tags: TagResult[]): string {
   }
   return [
     `Tag list: ${tags.length} item(s)`,
-    ...tags.map((tag) => `- ${tag.title}  (id: ${tag.id})  url: ${tagUrl(tag.title)}`),
+    ...tags.map((tag) => `- ${tag.title}  (id: ${tag.id})  url: ${tag.url}`),
   ].join("\n");
 }
 
@@ -87,6 +88,25 @@ function formatOpenResult(label: string, url: string): string {
 
 function formatCreateResult(url: string): string {
   return [`Created a note in UpNote using the official URL scheme.`, `url: ${url}`].join("\n");
+}
+
+function formatTimeBasedResults(label: string, notes: ReturnType<UpNoteRepository["listRecentNotes"]>): string {
+  if (notes.length === 0) {
+    return `No notes were found for ${label}.`;
+  }
+
+  return [
+    `${label}: ${notes.length} item(s)`,
+    ...notes.map((note, index) =>
+      [
+        `${index + 1}. ${note.title}`,
+        `id: ${note.id}`,
+        `url: ${note.url}`,
+        `updatedAt: ${note.updatedAt ?? "unknown"}`,
+        note.preview ? `preview: ${note.preview}` : "preview: none",
+      ].join("\n"),
+    ),
+  ].join("\n\n");
 }
 
 async function main(): Promise<void> {
@@ -122,6 +142,69 @@ async function main(): Promise<void> {
         ],
         structuredContent: {
           query,
+          count: notes.length,
+          notes,
+          dbPath: repository.getResolvedDbPath(),
+        },
+      };
+    },
+  );
+
+  server.registerTool(
+    "list_recent_notes",
+    {
+      description: [
+        "List the most recently updated UpNote notes.",
+        "Use this when you want the latest note activity without a search query.",
+        "Results include note IDs and deep links.",
+      ].join(" "),
+      inputSchema: {
+        limit: z.number().int().min(1).max(50).optional().describe("Maximum number of notes. Defaults to 10"),
+      },
+    },
+    async ({ limit }) => {
+      const notes = repository.listRecentNotes(limit ?? 10);
+      return {
+        content: [{ type: "text", text: formatTimeBasedResults("Recent notes", notes) }],
+        structuredContent: {
+          count: notes.length,
+          notes,
+          dbPath: repository.getResolvedDbPath(),
+        },
+      };
+    },
+  );
+
+  server.registerTool(
+    "find_notes",
+    {
+      description: [
+        "Find UpNote notes by combining a time period with an optional keyword query and optional tag filter.",
+        "Use this when you want one-step searches like 'this week's AI notes' or 'this month's meeting-tagged notes'.",
+        "The period is based on updatedAt.",
+      ].join(" "),
+      inputSchema: {
+        period: z.enum(["recent", "this_week", "this_month"]).optional().describe("Time window based on updatedAt. Defaults to recent"),
+        query: z.string().optional().describe("Optional keyword query across title, body text, and summary"),
+        tag: z.string().optional().describe("Optional tag filter, with or without #"),
+        limit: z.number().int().min(1).max(100).optional().describe("Maximum number of notes. Defaults to 10"),
+      },
+    },
+    async ({ period, query, tag, limit }) => {
+      const params: FindNotesParams = { period, query, tag, limit };
+      const notes = repository.findNotes(params);
+      const label = [
+        period ?? "recent",
+        query ? `query=${JSON.stringify(query)}` : "",
+        tag ? `tag=${JSON.stringify(tag)}` : "",
+      ]
+        .filter(Boolean)
+        .join(", ");
+
+      return {
+        content: [{ type: "text", text: formatTimeBasedResults(`Filtered notes (${label})`, notes) }],
+        structuredContent: {
+          params,
           count: notes.length,
           notes,
           dbPath: repository.getResolvedDbPath(),
@@ -232,6 +315,56 @@ async function main(): Promise<void> {
         structuredContent: {
           count: notebooks.length,
           notebooks,
+          dbPath: repository.getResolvedDbPath(),
+        },
+      };
+    },
+  );
+
+  server.registerTool(
+    "list_notes_this_week",
+    {
+      description: [
+        "List UpNote notes updated during the current week.",
+        "The week starts on Monday in local time.",
+        "Use this when you want notes touched this week without providing a search query.",
+      ].join(" "),
+      inputSchema: {
+        limit: z.number().int().min(1).max(100).optional().describe("Maximum number of notes. Defaults to 50"),
+      },
+    },
+    async ({ limit }) => {
+      const notes = repository.listNotesThisWeek(limit ?? 50);
+      return {
+        content: [{ type: "text", text: formatTimeBasedResults("Notes updated this week", notes) }],
+        structuredContent: {
+          count: notes.length,
+          notes,
+          dbPath: repository.getResolvedDbPath(),
+        },
+      };
+    },
+  );
+
+  server.registerTool(
+    "list_notes_this_month",
+    {
+      description: [
+        "List UpNote notes updated during the current month.",
+        "Use this when you want notes touched this month without providing a search query.",
+        "This is based on updatedAt, not createdAt.",
+      ].join(" "),
+      inputSchema: {
+        limit: z.number().int().min(1).max(100).optional().describe("Maximum number of notes. Defaults to 50"),
+      },
+    },
+    async ({ limit }) => {
+      const notes = repository.listNotesThisMonth(limit ?? 50);
+      return {
+        content: [{ type: "text", text: formatTimeBasedResults("Notes updated this month", notes) }],
+        structuredContent: {
+          count: notes.length,
+          notes,
           dbPath: repository.getResolvedDbPath(),
         },
       };

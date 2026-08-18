@@ -13,6 +13,7 @@ export type SearchNoteResult = {
   preview: string;
   updatedAt: string | null;
   createdAt: string | null;
+  url: string;
 };
 
 export type NoteDetail = {
@@ -32,12 +33,14 @@ export type NotebookResult = {
   noteCount: number;
   parent: string | null;
   updatedAt: string | null;
+  url: string;
 };
 
 export type TagResult = {
   id: string;
   title: string;
   updatedAt: string | null;
+  url: string;
 };
 
 export type CreateNoteParams = {
@@ -46,6 +49,13 @@ export type CreateNoteParams = {
   notebook?: string;
   markdown?: boolean;
   newWindow?: boolean;
+};
+
+export type FindNotesParams = {
+  period?: "recent" | "this_week" | "this_month";
+  query?: string;
+  tag?: string;
+  limit?: number;
 };
 
 type SearchNoteRow = {
@@ -94,6 +104,21 @@ function formatTimestamp(value: number | null): string | null {
 
 function normalizeMultilineText(value: string | null): string {
   return value?.trim() ?? "";
+}
+
+function startOfCurrentWeek(): number {
+  const now = new Date();
+  const start = new Date(now);
+  const day = start.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  start.setDate(start.getDate() + diff);
+  start.setHours(0, 0, 0, 0);
+  return start.getTime();
+}
+
+function startOfCurrentMonth(): number {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), 1).getTime();
 }
 
 export function noteUrl(noteId: string): string {
@@ -190,6 +215,7 @@ export class UpNoteRepository {
         noteCount: row.noteCount,
         parent: row.parent?.trim() || null,
         updatedAt: formatTimestamp(row.updatedAt),
+        url: notebookUrl(row.id),
       }));
     } catch (error) {
       throw new Error(`Failed to list notebooks: ${String(error)}`);
@@ -213,9 +239,147 @@ export class UpNoteRepository {
         id: row.id,
         title: row.title?.trim() || "",
         updatedAt: formatTimestamp(row.updatedAt),
+        url: tagUrl(row.title?.trim() || ""),
       }));
     } catch (error) {
       throw new Error(`Failed to list tags: ${String(error)}`);
+    }
+  }
+
+  listRecentNotes(limit = 10): SearchNoteResult[] {
+    const clamped = Math.min(Math.max(limit, 1), 50);
+
+    try {
+      const rows = this.db
+        .query<SearchNoteRow, [number]>(
+          `
+            SELECT
+              id,
+              title,
+              substr(COALESCE(text, summary, ''), 1, 240) AS preview,
+              updatedAt,
+              createdAt
+            FROM notes
+            WHERE deleted = 0
+              AND trashed = 0
+            ORDER BY updatedAt DESC
+            LIMIT ?
+          `,
+        )
+        .all(clamped);
+
+      return rows.map((row) => ({
+        id: row.id,
+        title: row.title?.trim() || "Untitled",
+        preview: normalizeMultilineText(row.preview),
+        updatedAt: formatTimestamp(row.updatedAt),
+        createdAt: formatTimestamp(row.createdAt),
+        url: noteUrl(row.id),
+      }));
+    } catch (error) {
+      throw new Error(`Failed to list recent notes: ${String(error)}`);
+    }
+  }
+
+  listNotesThisWeek(limit = 50): SearchNoteResult[] {
+    return this.listNotesUpdatedSince(startOfCurrentWeek(), limit, "this week");
+  }
+
+  listNotesThisMonth(limit = 50): SearchNoteResult[] {
+    return this.listNotesUpdatedSince(startOfCurrentMonth(), limit, "this month");
+  }
+
+  findNotes(params: FindNotesParams): SearchNoteResult[] {
+    const period = params.period ?? "recent";
+    const limit = Math.min(Math.max(params.limit ?? 10, 1), 100);
+    const clauses = ["deleted = 0", "trashed = 0"];
+    const values: Array<string | number> = [];
+
+    if (period === "this_week") {
+      clauses.push("updatedAt >= ?");
+      values.push(startOfCurrentWeek());
+    } else if (period === "this_month") {
+      clauses.push("updatedAt >= ?");
+      values.push(startOfCurrentMonth());
+    }
+
+    if (params.query?.trim()) {
+      const likeQuery = `%${params.query.trim()}%`;
+      clauses.push("(COALESCE(title, '') LIKE ? OR COALESCE(text, '') LIKE ? OR COALESCE(summary, '') LIKE ?)");
+      values.push(likeQuery, likeQuery, likeQuery);
+    }
+
+    if (params.tag?.trim()) {
+      clauses.push("EXISTS (SELECT 1 FROM json_each(tagLinks) WHERE json_each.value = ?)");
+      values.push(params.tag.trim().replace(/^#/, ""));
+    }
+
+    values.push(limit);
+
+    try {
+      const rows = this.db
+        .query<SearchNoteRow, Array<string | number>>(
+          `
+            SELECT
+              id,
+              title,
+              substr(COALESCE(text, summary, ''), 1, 240) AS preview,
+              updatedAt,
+              createdAt
+            FROM notes
+            WHERE ${clauses.join("\n              AND ")}
+            ORDER BY updatedAt DESC
+            LIMIT ?
+          `,
+        )
+        .all(...values);
+
+      return rows.map((row) => ({
+        id: row.id,
+        title: row.title?.trim() || "Untitled",
+        preview: normalizeMultilineText(row.preview),
+        updatedAt: formatTimestamp(row.updatedAt),
+        createdAt: formatTimestamp(row.createdAt),
+        url: noteUrl(row.id),
+      }));
+    } catch (error) {
+      throw new Error(`Failed to find notes: ${String(error)}`);
+    }
+  }
+
+  private listNotesUpdatedSince(startMs: number, limit: number, label: string): SearchNoteResult[] {
+    const clamped = Math.min(Math.max(limit, 1), 100);
+
+    try {
+      const rows = this.db
+        .query<SearchNoteRow, [number, number]>(
+          `
+            SELECT
+              id,
+              title,
+              substr(COALESCE(text, summary, ''), 1, 240) AS preview,
+              updatedAt,
+              createdAt
+            FROM notes
+            WHERE deleted = 0
+              AND trashed = 0
+              AND updatedAt >= ?
+            ORDER BY updatedAt DESC
+            LIMIT ?
+          `,
+        )
+        .all(startMs, clamped);
+
+      return rows.map((row) => ({
+        id: row.id,
+        title: row.title?.trim() || "Untitled",
+        preview: normalizeMultilineText(row.preview),
+        updatedAt: formatTimestamp(row.updatedAt),
+        createdAt: formatTimestamp(row.createdAt),
+        url: noteUrl(row.id),
+      }));
+    } catch (error) {
+      throw new Error(`Failed to list notes updated ${label}: ${String(error)}`);
     }
   }
 
@@ -257,6 +421,7 @@ export class UpNoteRepository {
         preview: normalizeMultilineText(row.preview),
         updatedAt: formatTimestamp(row.updatedAt),
         createdAt: formatTimestamp(row.createdAt),
+        url: noteUrl(row.id),
       }));
     } catch (error) {
       throw new Error(`Failed to search notes by tag: ${String(error)}`);
@@ -302,6 +467,7 @@ export class UpNoteRepository {
         preview: normalizeMultilineText(row.preview),
         updatedAt: formatTimestamp(row.updatedAt),
         createdAt: formatTimestamp(row.createdAt),
+        url: noteUrl(row.id),
       }));
     } catch (error) {
       throw new Error(`Failed to search UpNote notes: ${String(error)}`);

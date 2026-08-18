@@ -7,6 +7,10 @@ This is an unofficial project and is not affiliated with, endorsed by, or mainta
 ## Features
 
 - `search_notes`: search notes by title, body text, or summary
+- `list_recent_notes`: list the most recently updated notes
+- `list_notes_this_week`: list notes updated during the current week
+- `list_notes_this_month`: list notes updated during the current month
+- `find_notes`: combine period, keyword, and tag filters in one call
 - `open_note`: open a note in the UpNote app by note ID
 - `get_note`: fetch the full contents of a note by note ID
 - `open_notebook`: open a notebook in the UpNote app by notebook ID
@@ -152,6 +156,11 @@ If you deny these permissions, note search and retrieval will not work. After gr
 Try prompts like:
 
 - `Search UpNote for "travel" and show me the first result`
+- `Show me my 10 most recent UpNote notes`
+- `Show me this week's notes`
+- `Show me this month's notes`
+- `Find this week's AI notes`
+- `Find this month's notes tagged meeting`
 - `List my UpNote tags and open the note that matches the tag "meeting"`
 - `Find notes about "launch", summarize them, and create a new UpNote note with the summary`
 - `List notebooks and open the one named "Research"`
@@ -166,6 +175,58 @@ Input:
 {
   "query": "travel",
   "limit": 5
+}
+```
+
+### `list_recent_notes`
+
+Input:
+
+```json
+{
+  "limit": 10
+}
+```
+
+### `list_notes_this_week`
+
+Input:
+
+```json
+{
+  "limit": 20
+}
+```
+
+### `list_notes_this_month`
+
+Input:
+
+```json
+{
+  "limit": 20
+}
+```
+
+### `find_notes`
+
+Input:
+
+```json
+{
+  "period": "this_week",
+  "query": "AI",
+  "limit": 10
+}
+```
+
+Or:
+
+```json
+{
+  "period": "this_month",
+  "tag": "meeting",
+  "limit": 10
 }
 ```
 
