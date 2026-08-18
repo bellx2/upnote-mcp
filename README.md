@@ -127,8 +127,8 @@ If you deny these permissions, note search and retrieval will not work. After gr
 {
   "mcpServers": {
     "upnote": {
-      "command": "/Users/bell/.local/share/mise/installs/bun/latest/bin/bun",
-      "args": ["run", "/Users/bell/dev/t7b/upnote_mcp/src/index.ts"]
+      "command": "/absolute/path/to/bun",
+      "args": ["run", "/absolute/path/to/upnote-mcp/src/index.ts"]
     }
   }
 }
@@ -140,8 +140,8 @@ If you deny these permissions, note search and retrieval will not work. After gr
 {
   "mcpServers": {
     "upnote": {
-      "command": "/Users/bell/.local/share/mise/installs/bun/latest/bin/bun",
-      "args": ["run", "/Users/bell/dev/t7b/upnote_mcp/src/index.ts"]
+      "command": "/absolute/path/to/bun",
+      "args": ["run", "/absolute/path/to/upnote-mcp/src/index.ts"]
     }
   }
 }
