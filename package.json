@@ -1,13 +1,41 @@
 {
-  "name": "upnote-mcp",
-  "module": "src/index.ts",
+  "name": "@bellx2/upnote-mcp",
+  "version": "0.1.0",
+  "description": "Unofficial read-only MCP server for reading local UpNote data.",
   "type": "module",
-  "private": true,
+  "module": "src/index.ts",
+  "bin": {
+    "upnote-mcp": "./bin/upnote-mcp"
+  },
+  "files": [
+    "bin",
+    "src",
+    "README.md",
+    "README_ja.md",
+    "CLAUDE.md",
+    "LICENSE"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bellx2/upnote-mcp.git"
+  },
+  "homepage": "https://github.com/bellx2/upnote-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/bellx2/upnote-mcp/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "bun": ">=1.3.0"
+  },
   "scripts": {
     "dev": "bun run --watch src/index.ts",
     "start": "bun run src/index.ts",
     "check": "tsc --noEmit",
-    "smoke": "bun run scripts/smoke.ts"
+    "smoke": "bun run scripts/smoke.ts",
+    "prepublishOnly": "bun run check"
   },
   "devDependencies": {
     "@types/bun": "latest"

@@ -14,9 +14,14 @@ This is an unofficial project and is not affiliated with, endorsed by, or mainta
 
 This project is intentionally read-only. It does not write to the UpNote database.
 
+## Package Name
+
+This package is prepared to be published as `@bellx2/upnote-mcp`.
+
 ## Requirements
 
 - `macOS`
+- `bun` installed on the machine that runs the server
 - UpNote desktop app installed
 - Default UpNote database path:
 
@@ -37,6 +42,20 @@ bun install
 ```bash
 bun run start
 ```
+
+You can also run the published package through:
+
+```bash
+bunx @bellx2/upnote-mcp
+```
+
+or:
+
+```bash
+npx @bellx2/upnote-mcp
+```
+
+`npx` support still depends on `bun` being installed, because this package uses Bun-specific APIs such as `bun:sqlite`.
 
 For development with file watching:
 
@@ -75,8 +94,34 @@ export UPNOTE_DB="$HOME/Library/Containers/com.getupnote.desktop/Data/Library/Ap
 {
   "mcpServers": {
     "upnote": {
-      "command": "/Users/bell/.local/share/mise/installs/bun/latest/bin/bun",
-      "args": ["run", "/Users/bell/dev/t7b/upnote_mcp/src/index.ts"]
+      "command": "bunx",
+      "args": ["@bellx2/upnote-mcp"]
+    }
+  }
+}
+```
+
+### Cursor (published package)
+
+```json
+{
+  "mcpServers": {
+    "upnote": {
+      "command": "bunx",
+      "args": ["@bellx2/upnote-mcp"]
+    }
+  }
+}
+```
+
+### Claude Desktop (published package)
+
+```json
+{
+  "mcpServers": {
+    "upnote": {
+      "command": "bunx",
+      "args": ["@bellx2/upnote-mcp"]
     }
   }
 }
@@ -138,6 +183,14 @@ Input:
 bun run check
 bun run smoke
 ```
+
+## Publishing
+
+```bash
+npm publish
+```
+
+Make sure the `@bellx2` scope is available in your npm account before publishing.
 
 ## Japanese README
 
