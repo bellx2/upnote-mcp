@@ -1,0 +1,323 @@
+import { Database } from "bun:sqlite";
+
+const DEFAULT_UPNOTE_DB = `${process.env.HOME ?? ""}/Library/Containers/com.getupnote.desktop/Data/Library/Application Support/UpNote/upnote.sqlite3`;
+
+export type SearchNotesParams = {
+  query: string;
+  limit?: number;
+};
+
+export type SearchNoteResult = {
+  id: string;
+  title: string;
+  preview: string;
+  updatedAt: string | null;
+  createdAt: string | null;
+};
+
+export type NoteDetail = {
+  id: string;
+  title: string;
+  content: string;
+  html: string;
+  summary: string;
+  updatedAt: string | null;
+  createdAt: string | null;
+  url: string;
+};
+
+export type NotebookResult = {
+  id: string;
+  title: string;
+  noteCount: number;
+  parent: string | null;
+  updatedAt: string | null;
+};
+
+export type TagResult = {
+  id: string;
+  title: string;
+  updatedAt: string | null;
+};
+
+type SearchNoteRow = {
+  id: string;
+  title: string | null;
+  preview: string | null;
+  updatedAt: number | null;
+  createdAt: number | null;
+};
+
+type NotebookRow = {
+  id: string;
+  title: string | null;
+  noteCount: number;
+  parent: string | null;
+  updatedAt: number | null;
+};
+
+type TagRow = {
+  id: string;
+  title: string | null;
+  updatedAt: number | null;
+};
+
+type NoteDetailRow = {
+  id: string;
+  title: string | null;
+  text: string | null;
+  html: string | null;
+  summary: string | null;
+  updatedAt: number | null;
+  createdAt: number | null;
+};
+
+function resolveUpnoteDbPath(): string {
+  return process.env.UPNOTE_DB?.trim() || DEFAULT_UPNOTE_DB;
+}
+
+function formatTimestamp(value: number | null): string | null {
+  if (!value) {
+    return null;
+  }
+
+  return new Date(value).toISOString();
+}
+
+function normalizeMultilineText(value: string | null): string {
+  return value?.trim() ?? "";
+}
+
+export function noteUrl(noteId: string): string {
+  return `upnote://x-callback-url/openNote?noteId=${encodeURIComponent(noteId)}`;
+}
+
+export function notebookUrl(notebookId: string): string {
+  return `upnote://x-callback-url/openNotebook?notebookId=${encodeURIComponent(notebookId)}`;
+}
+
+export function tagUrl(tagTitle: string): string {
+  const tag = tagTitle.replace(/^#/, "");
+  return `upnote://x-callback-url/tag/view?tag=${encodeURIComponent(tag)}`;
+}
+
+function createMissingDbMessage(dbPath: string): string {
+  return [
+    "UpNote database file was not found.",
+    `Checked path: ${dbPath}`,
+    "Set the UPNOTE_DB environment variable if your upnote.sqlite3 is stored in a different location.",
+  ].join("\n");
+}
+
+export class UpNoteRepository {
+  private readonly dbPath: string;
+  private readonly db: Database;
+
+  constructor(dbPath = resolveUpnoteDbPath()) {
+    this.dbPath = dbPath;
+
+    if (!Bun.file(this.dbPath).exists()) {
+      throw new Error(createMissingDbMessage(this.dbPath));
+    }
+
+    this.db = new Database(this.dbPath, {
+      readonly: true,
+      create: false,
+      strict: true,
+    });
+  }
+
+  getResolvedDbPath(): string {
+    return this.dbPath;
+  }
+
+  listNotebooks(): NotebookResult[] {
+    try {
+      const rows = this.db
+        .query<NotebookRow, []>(
+          `
+            SELECT
+              nb.id,
+              nb.title,
+              nb.parent,
+              nb.updatedAt,
+              COUNT(o.noteId) AS noteCount
+            FROM notebooks nb
+            LEFT JOIN organizers o ON o.notebookId = nb.id AND o.deleted = 0
+            WHERE nb.deleted = 0 AND nb.inactive = 0
+            GROUP BY nb.id
+            ORDER BY nb.title ASC
+          `,
+        )
+        .all();
+
+      return rows.map((row) => ({
+        id: row.id,
+        title: row.title?.trim() || "Untitled",
+        noteCount: row.noteCount,
+        parent: row.parent?.trim() || null,
+        updatedAt: formatTimestamp(row.updatedAt),
+      }));
+    } catch (error) {
+      throw new Error(`Failed to list notebooks: ${String(error)}`);
+    }
+  }
+
+  listTags(): TagResult[] {
+    try {
+      const rows = this.db
+        .query<TagRow, []>(
+          `
+            SELECT id, title, updatedAt
+            FROM tags
+            WHERE deleted = 0 AND inactive = 0
+            ORDER BY title ASC
+          `,
+        )
+        .all();
+
+      return rows.map((row) => ({
+        id: row.id,
+        title: row.title?.trim() || "",
+        updatedAt: formatTimestamp(row.updatedAt),
+      }));
+    } catch (error) {
+      throw new Error(`Failed to list tags: ${String(error)}`);
+    }
+  }
+
+  searchByTag(tagTitle: string, limit = 10): SearchNoteResult[] {
+    const tag = tagTitle.trim().replace(/^#/, "");
+    if (!tag) {
+      throw new Error("tagTitle cannot be empty.");
+    }
+
+    const clamped = Math.min(Math.max(limit, 1), 50);
+
+    try {
+      const rows = this.db
+        .query<SearchNoteRow, [string, number]>(
+          `
+            SELECT
+              id,
+              title,
+              substr(COALESCE(text, summary, ''), 1, 240) AS preview,
+              updatedAt,
+              createdAt
+            FROM notes
+            WHERE deleted = 0
+              AND trashed = 0
+              AND EXISTS (
+                SELECT 1
+                FROM json_each(tagLinks)
+                WHERE json_each.value = ?
+              )
+            ORDER BY updatedAt DESC
+            LIMIT ?
+          `,
+        )
+        .all(tag, clamped);
+
+      return rows.map((row) => ({
+        id: row.id,
+        title: row.title?.trim() || "Untitled",
+        preview: normalizeMultilineText(row.preview),
+        updatedAt: formatTimestamp(row.updatedAt),
+        createdAt: formatTimestamp(row.createdAt),
+      }));
+    } catch (error) {
+      throw new Error(`Failed to search notes by tag: ${String(error)}`);
+    }
+  }
+
+  searchNotes(params: SearchNotesParams): SearchNoteResult[] {
+    const query = params.query.trim();
+    if (!query) {
+      throw new Error("query cannot be empty.");
+    }
+
+    const limit = Math.min(Math.max(params.limit ?? 10, 1), 50);
+    const likeQuery = `%${query}%`;
+
+    try {
+      const rows = this.db
+        .query<SearchNoteRow, [string, string, string, number]>(
+          `
+            SELECT
+              id,
+              title,
+              substr(COALESCE(text, summary, ''), 1, 240) AS preview,
+              updatedAt,
+              createdAt
+            FROM notes
+            WHERE deleted = 0
+              AND trashed = 0
+              AND (
+                COALESCE(title, '') LIKE ?
+                OR COALESCE(text, '') LIKE ?
+                OR COALESCE(summary, '') LIKE ?
+              )
+            ORDER BY updatedAt DESC
+            LIMIT ?
+          `,
+        )
+        .all(likeQuery, likeQuery, likeQuery, limit);
+
+      return rows.map((row) => ({
+        id: row.id,
+        title: row.title?.trim() || "Untitled",
+        preview: normalizeMultilineText(row.preview),
+        updatedAt: formatTimestamp(row.updatedAt),
+        createdAt: formatTimestamp(row.createdAt),
+      }));
+    } catch (error) {
+      throw new Error(`Failed to search UpNote notes: ${String(error)}`);
+    }
+  }
+
+  getNote(id: string): NoteDetail {
+    const noteId = id.trim();
+    if (!noteId) {
+      throw new Error("id cannot be empty.");
+    }
+
+    try {
+      const row = this.db
+        .query<NoteDetailRow, [string]>(
+          `
+            SELECT
+              id,
+              title,
+              text,
+              html,
+              summary,
+              updatedAt,
+              createdAt
+            FROM notes
+            WHERE id = ?
+              AND deleted = 0
+              AND trashed = 0
+            LIMIT 1
+          `,
+        )
+        .get(noteId);
+
+      if (!row) {
+        throw new Error(`Note not found: ${noteId}`);
+      }
+
+      return {
+        id: row.id,
+        title: row.title?.trim() || "Untitled",
+        content: normalizeMultilineText(row.text),
+        html: row.html ?? "",
+        summary: row.summary ?? "",
+        updatedAt: formatTimestamp(row.updatedAt),
+        createdAt: formatTimestamp(row.createdAt),
+        url: noteUrl(row.id),
+      };
+    } catch (error) {
+      throw new Error(`Failed to get UpNote note: ${String(error)}`);
+    }
+  }
+}

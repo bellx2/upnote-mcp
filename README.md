@@ -1,0 +1,144 @@
+# upnote-mcp
+
+`upnote-mcp` is a read-only MCP server for reading local UpNote data from SQLite over stdio.
+
+This is an unofficial project and is not affiliated with, endorsed by, or maintained by UpNote.
+
+## Features
+
+- `search_notes`: search notes by title, body text, or summary
+- `get_note`: fetch the full contents of a note by note ID
+- `list_notebooks`: list notebooks with note counts
+- `list_tags`: list tags
+- `search_by_tag`: list notes for a tag
+
+This project is intentionally read-only. It does not write to the UpNote database.
+
+## Requirements
+
+- `macOS`
+- UpNote desktop app installed
+- Default UpNote database path:
+
+```text
+~/Library/Containers/com.getupnote.desktop/Data/Library/Application Support/UpNote/upnote.sqlite3
+```
+
+If your database lives somewhere else, set `UPNOTE_DB`.
+
+## Setup
+
+```bash
+bun install
+```
+
+## Run
+
+```bash
+bun run start
+```
+
+For development with file watching:
+
+```bash
+bun run dev
+```
+
+## Environment Variables
+
+- `UPNOTE_DB`: absolute path to `upnote.sqlite3`
+
+Example:
+
+```bash
+export UPNOTE_DB="$HOME/Library/Containers/com.getupnote.desktop/Data/Library/Application Support/UpNote/upnote.sqlite3"
+```
+
+## MCP Config Example
+
+### Cursor
+
+```json
+{
+  "mcpServers": {
+    "upnote": {
+      "command": "/Users/bell/.local/share/mise/installs/bun/latest/bin/bun",
+      "args": ["run", "/Users/bell/dev/t7b/upnote_mcp/src/index.ts"]
+    }
+  }
+}
+```
+
+### Claude Desktop
+
+```json
+{
+  "mcpServers": {
+    "upnote": {
+      "command": "/Users/bell/.local/share/mise/installs/bun/latest/bin/bun",
+      "args": ["run", "/Users/bell/dev/t7b/upnote_mcp/src/index.ts"]
+    }
+  }
+}
+```
+
+## Tool Reference
+
+### `search_notes`
+
+Input:
+
+```json
+{
+  "query": "travel",
+  "limit": 5
+}
+```
+
+### `get_note`
+
+Input:
+
+```json
+{
+  "id": "019fd239-a98a-742b-b75b-cee66e7aa830"
+}
+```
+
+### `list_notebooks`
+
+Input:
+
+```json
+{}
+```
+
+### `list_tags`
+
+Input:
+
+```json
+{}
+```
+
+### `search_by_tag`
+
+Input:
+
+```json
+{
+  "tag": "meeting",
+  "limit": 5
+}
+```
+
+## Verification
+
+```bash
+bun run check
+bun run smoke
+```
+
+## Japanese README
+
+The previous Japanese README is available at `README_ja.md`.
