@@ -214,6 +214,56 @@ async function main(): Promise<void> {
   );
 
   server.registerTool(
+    "find_and_open_note",
+    {
+      description: [
+        "Find UpNote notes by combining a time period with an optional keyword query and optional tag filter, then open the first matching note in UpNote.",
+        "Use this when you want one-step actions like 'open this week's AI note' or 'open the latest note tagged meeting'.",
+        "The period is based on updatedAt and the most recently updated match is opened.",
+      ].join(" "),
+      inputSchema: {
+        period: z.enum(["recent", "this_week", "this_month"]).optional().describe("Time window based on updatedAt. Defaults to recent"),
+        query: z.string().optional().describe("Optional keyword query across title, body text, and summary"),
+        tag: z.string().optional().describe("Optional tag filter, with or without #"),
+        limit: z.number().int().min(1).max(100).optional().describe("Search depth before opening the first match. Defaults to 10"),
+      },
+    },
+    async ({ period, query, tag, limit }) => {
+      const params: FindNotesParams = { period, query, tag, limit };
+      const notes = repository.findNotes(params);
+
+      if (notes.length === 0) {
+        return {
+          content: [{ type: "text", text: "No matching notes were found to open." }],
+          structuredContent: {
+            params,
+            count: 0,
+            notes: [],
+            dbPath: repository.getResolvedDbPath(),
+          },
+        };
+      }
+
+      const note = notes[0];
+      if (!note) {
+        throw new Error("A matching note was expected but none was available.");
+      }
+      await openUpNoteUrl(note.url);
+
+      return {
+        content: [{ type: "text", text: formatOpenResult(`note ${note.title}`, note.url) }],
+        structuredContent: {
+          params,
+          openedNote: note,
+          count: notes.length,
+          notes,
+          dbPath: repository.getResolvedDbPath(),
+        },
+      };
+    },
+  );
+
+  server.registerTool(
     "open_note",
     {
       description: [

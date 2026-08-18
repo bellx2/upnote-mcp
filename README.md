@@ -11,6 +11,7 @@ This is an unofficial project and is not affiliated with, endorsed by, or mainta
 - `list_notes_this_week`: list notes updated during the current week
 - `list_notes_this_month`: list notes updated during the current month
 - `find_notes`: combine period, keyword, and tag filters in one call
+- `find_and_open_note`: find matching notes and open the most recent match in UpNote
 - `open_note`: open a note in the UpNote app by note ID
 - `get_note`: fetch the full contents of a note by note ID
 - `open_notebook`: open a notebook in the UpNote app by notebook ID
@@ -160,7 +161,9 @@ Try prompts like:
 - `Show me this week's notes`
 - `Show me this month's notes`
 - `Find this week's AI notes`
+- `Open this week's AI note`
 - `Find this month's notes tagged meeting`
+- `Open the latest note tagged meeting`
 - `List my UpNote tags and open the note that matches the tag "meeting"`
 - `Find notes about "launch", summarize them, and create a new UpNote note with the summary`
 - `List notebooks and open the one named "Research"`
@@ -225,6 +228,28 @@ Or:
 ```json
 {
   "period": "this_month",
+  "tag": "meeting",
+  "limit": 10
+}
+```
+
+### `find_and_open_note`
+
+Input:
+
+```json
+{
+  "period": "this_week",
+  "query": "AI",
+  "limit": 10
+}
+```
+
+Or:
+
+```json
+{
+  "period": "recent",
   "tag": "meeting",
   "limit": 10
 }

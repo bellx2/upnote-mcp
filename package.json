@@ -1,6 +1,6 @@
 {
   "name": "@bellx2/upnote-mcp",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "Unofficial read-only MCP server for reading local UpNote data.",
   "type": "module",
   "module": "src/index.ts",
