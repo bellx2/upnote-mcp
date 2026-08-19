@@ -1,0 +1,61 @@
+{
+  "$schema": "https://raw.githubusercontent.com/modelcontextprotocol/mcpb/main/schemas/mcpb-manifest-v0.3.schema.json",
+  "manifest_version": "0.3",
+  "name": "upnote-mcp",
+  "display_name": "UpNote MCP",
+  "version": "0.2.6",
+  "description": "Search, read, and create UpNote notes from Claude Desktop.",
+  "long_description": "Unofficial MCP server for UpNote on macOS. Reads your local UpNote SQLite database (read-only) and exposes search, tag filtering, note retrieval, and safe note creation through UpNote's official URL scheme. Requires the UpNote desktop app.",
+  "author": {
+    "name": "bellx2",
+    "url": "https://github.com/bellx2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bellx2/upnote-mcp.git"
+  },
+  "homepage": "https://github.com/bellx2/upnote-mcp#readme",
+  "documentation": "https://github.com/bellx2/upnote-mcp#readme",
+  "support": "https://github.com/bellx2/upnote-mcp/issues",
+  "server": {
+    "type": "binary",
+    "entry_point": "server/upnote-mcp",
+    "mcp_config": {
+      "command": "${__dirname}/server/upnote-mcp",
+      "args": [],
+      "env": {
+        "UPNOTE_DB": "${user_config.upnote_db}"
+      }
+    }
+  },
+  "tools": [
+    { "name": "search_notes", "description": "Search notes by keyword across title, body, and summary" },
+    { "name": "list_recent_notes", "description": "List the most recently updated notes" },
+    { "name": "list_notes_this_week", "description": "List notes updated during the current week" },
+    { "name": "list_notes_this_month", "description": "List notes updated during the current month" },
+    { "name": "find_notes", "description": "Find notes by period, keyword, and tag" },
+    { "name": "find_and_open_note", "description": "Find matching notes and open the most recent one in UpNote" },
+    { "name": "get_note", "description": "Fetch full note contents by ID" },
+    { "name": "open_note", "description": "Open a note in the UpNote app" },
+    { "name": "open_notebook", "description": "Open a notebook in the UpNote app" },
+    { "name": "list_notebooks", "description": "List notebooks with note counts" },
+    { "name": "list_tags", "description": "List available tags" },
+    { "name": "search_by_tag", "description": "List notes for a specific tag" },
+    { "name": "create_note", "description": "Create a new note through UpNote's official URL scheme" }
+  ],
+  "keywords": ["upnote", "notes", "mcp", "productivity"],
+  "license": "MIT",
+  "user_config": {
+    "upnote_db": {
+      "type": "file",
+      "title": "UpNote Database",
+      "description": "Path to upnote.sqlite3. Leave empty to use the default UpNote desktop app location.",
+      "required": false,
+      "default": "${HOME}/Library/Containers/com.getupnote.desktop/Data/Library/Application Support/UpNote/upnote.sqlite3"
+    }
+  },
+  "compatibility": {
+    "claude_desktop": ">=0.10.0",
+    "platforms": ["darwin"]
+  }
+}

@@ -1,0 +1,12 @@
+.git
+.github
+.cursor
+node_modules
+dist
+scripts
+*.mcpb
+mcpb-bundle
+CLAUDE.md
+README_ja.md
+tsconfig.json
+bun.lock

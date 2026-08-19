@@ -41,6 +41,49 @@ bun run start
 bun run dev
 ```
 
+通常利用では公開パッケージを使うのが簡単です。
+
+```bash
+bunx @bellx2/upnote-mcp
+```
+
+`npx @bellx2/upnote-mcp` も使えますが、`bun:sqlite` など Bun 依存のため、実行環境には Bun が必要です。
+
+## MCP Bundle（`.mcpb`）でのインストール
+
+macOS 版 Claude Desktop では、`bunx` ではなく `.mcpb` からインストールすることもできます。
+
+`.mcpb` は、スタンドアロンの MCP サーバーと `manifest.json` を含む zip アーカイブです。ブラウザ拡張のように、Claude Desktop からダブルクリックでインストールできます。
+
+### ダウンロード
+
+タグ付きリリースごとに `.mcpb` が [GitHub Releases](https://github.com/bellx2/upnote-mcp/releases) に添付されます。
+
+ファイル名の例:
+
+```text
+upnote-mcp-0.2.6.mcpb
+```
+
+### Claude Desktop へのインストール
+
+1. GitHub Releases から `.mcpb` をダウンロード
+2. ファイルをダブルクリック
+3. Claude Desktop のインストールダイアログに従う
+4. 必要なら UpNote データベースのパスを設定（標準の UpNote デスクトップ版ならデフォルトのままで問題ありません）
+
+バンドルには macOS 用バイナリが同梱されているため、この方法では Bun は不要です。
+
+### ローカルでビルド
+
+```bash
+bun run build:mcpb
+```
+
+`dist/upnote-mcp.mcpb` が生成されます。
+
+`v*` 形式のタグを push すると、GitHub Actions（`macos-latest`）でビルドされ、Release に自動添付されます。
+
 ## 環境変数
 
 - `UPNOTE_DB`: `upnote.sqlite3` の絶対パス
@@ -62,16 +105,52 @@ export UPNOTE_DB="$HOME/Library/Containers/com.getupnote.desktop/Data/Library/Ap
 
 この権限を拒否すると、ノート検索や本文取得は動作しません。許可後は、Cursor や Claude Desktop で MCP サーバーを再起動してください。
 
-## Cursor の MCP 設定例
+## MCP 設定例
+
+### 公開パッケージ（Cursor / Claude Desktop）
+
+#### Cursor
+
+```json
+{
+  "mcpServers": {
+    "upnote": {
+      "command": "bunx",
+      "args": ["@bellx2/upnote-mcp"]
+    }
+  }
+}
+```
+
+#### Claude Desktop
+
+##### 方法1: MCP Bundle（推奨）
+
+[GitHub Releases](https://github.com/bellx2/upnote-mcp/releases) から `.mcpb` をダウンロードしてインストールします。JSON を手で編集する必要はありません。
+
+##### 方法2: 公開パッケージ
+
+```json
+{
+  "mcpServers": {
+    "upnote": {
+      "command": "bunx",
+      "args": ["@bellx2/upnote-mcp"]
+    }
+  }
+}
+```
+
+### ローカル開発用（Cursor）
 
 ```json
 {
   "mcpServers": {
     "upnote": {
       "command": "bun",
-      "args": ["run", "/Users/bell/dev/t7b/upnote_mcp/src/index.ts"],
+      "args": ["run", "/absolute/path/to/upnote-mcp/src/index.ts"],
       "env": {
-        "UPNOTE_DB": "/Users/bell/Library/Containers/com.getupnote.desktop/Data/Library/Application Support/UpNote/upnote.sqlite3"
+        "UPNOTE_DB": "/Users/you/Library/Containers/com.getupnote.desktop/Data/Library/Application Support/UpNote/upnote.sqlite3"
       }
     }
   }
@@ -105,4 +184,5 @@ export UPNOTE_DB="$HOME/Library/Containers/com.getupnote.desktop/Data/Library/Ap
 
 ```bash
 bun run check
+bun run build:mcpb
 ```

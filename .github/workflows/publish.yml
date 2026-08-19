@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
 
 jobs:
@@ -41,3 +41,36 @@ jobs:
 
       - name: Publish package
         run: npm publish --access public --provenance
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Type check
+        run: bun run check
+
+      - name: Build MCPB bundle
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          jq --arg v "$VERSION" '.version = $v' mcpb-bundle/manifest.json > mcpb-bundle/manifest.json.tmp
+          mv mcpb-bundle/manifest.json.tmp mcpb-bundle/manifest.json
+          bun run build:mcpb
+          mv dist/upnote-mcp.mcpb "dist/upnote-mcp-${VERSION}.mcpb"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/upnote-mcp-*.mcpb
+          generate_release_notes: true

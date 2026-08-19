@@ -1,6 +1,6 @@
 {
   "name": "@bellx2/upnote-mcp",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "Unofficial read-only MCP server for reading local UpNote data.",
   "type": "module",
   "module": "src/index.ts",
@@ -34,6 +34,7 @@
     "start": "bun run src/index.ts",
     "check": "tsc --noEmit",
     "smoke": "bun run scripts/smoke.ts",
+    "build:mcpb": "bun build --compile src/index.ts --outfile dist/upnote-mcp && mkdir -p mcpb-bundle/server && cp dist/upnote-mcp mcpb-bundle/server/upnote-mcp && bunx @anthropic-ai/mcpb pack mcpb-bundle dist/upnote-mcp.mcpb",
     "prepublishOnly": "bun run check"
   },
   "devDependencies": {

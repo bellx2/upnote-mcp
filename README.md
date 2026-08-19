@@ -72,6 +72,43 @@ For development with file watching:
 bun run dev
 ```
 
+## Install via MCP Bundle (`.mcpb`)
+
+For Claude Desktop on macOS, you can also install a prebuilt MCP Bundle instead of running `bunx`.
+
+An `.mcpb` file is a zip archive containing a standalone MCP server and a `manifest.json`. Claude Desktop can install it with a double click, similar to a browser extension.
+
+### Download
+
+Tagged releases include an `.mcpb` asset on [GitHub Releases](https://github.com/bellx2/upnote-mcp/releases).
+
+Example file name:
+
+```text
+upnote-mcp-0.2.6.mcpb
+```
+
+### Install in Claude Desktop
+
+1. Download the `.mcpb` file from GitHub Releases
+2. Double-click the file
+3. Follow the Claude Desktop installation dialog
+4. Optionally set the UpNote database path during setup. The default path works for the standard UpNote desktop app location
+
+The bundle includes a compiled macOS binary, so Bun is not required for this install path.
+
+### Build locally
+
+To rebuild the bundle from source:
+
+```bash
+bun run build:mcpb
+```
+
+This creates `dist/upnote-mcp.mcpb`.
+
+Release builds run on GitHub Actions (`macos-latest`) and are attached automatically when a `v*` tag is pushed.
+
 ## Environment Variables
 
 - `UPNOTE_DB`: absolute path to `upnote.sqlite3`
@@ -112,6 +149,12 @@ If you deny these permissions, note search and retrieval will not work. After gr
 ```
 
 #### Claude Desktop
+
+##### Option 1: MCP Bundle (recommended)
+
+Download and install the `.mcpb` file from [GitHub Releases](https://github.com/bellx2/upnote-mcp/releases). No manual JSON editing is required.
+
+##### Option 2: published package
 
 ```json
 {
@@ -330,6 +373,7 @@ Input:
 ```bash
 bun run check
 bun run smoke
+bun run build:mcpb
 ```
 
 ## Japanese README

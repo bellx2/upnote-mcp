@@ -5,6 +5,8 @@ node_modules
 out
 dist
 *.tgz
+*.mcpb
+mcpb-bundle/server/
 
 # code coverage
 coverage
