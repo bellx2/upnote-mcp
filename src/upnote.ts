@@ -1,6 +1,8 @@
+import { existsSync } from "node:fs";
+import { homedir } from "node:os";
 import { Database } from "bun:sqlite";
 
-const DEFAULT_UPNOTE_DB = `${process.env.HOME ?? ""}/Library/Containers/com.getupnote.desktop/Data/Library/Application Support/UpNote/upnote.sqlite3`;
+const DEFAULT_UPNOTE_DB = `${homedir()}/Library/Containers/com.getupnote.desktop/Data/Library/Application Support/UpNote/upnote.sqlite3`;
 
 export type SearchNotesParams = {
   query: string;
@@ -91,7 +93,19 @@ type NoteDetailRow = {
 };
 
 function resolveUpnoteDbPath(): string {
-  return process.env.UPNOTE_DB?.trim() || DEFAULT_UPNOTE_DB;
+  const configured = process.env.UPNOTE_DB?.trim();
+  const raw = configured || DEFAULT_UPNOTE_DB;
+  return raw.replaceAll("${HOME}", homedir());
+}
+
+function createOpenDbMessage(dbPath: string, error: unknown): string {
+  return [
+    "Failed to open the UpNote database.",
+    `Checked path: ${dbPath}`,
+    "If you installed via Claude Desktop, open UpNote MCP settings and choose upnote.sqlite3 with the file picker.",
+    "On macOS, Claude Desktop may also need Full Disk Access in System Settings > Privacy & Security.",
+    `Details: ${String(error)}`,
+  ].join("\n");
 }
 
 function formatTimestamp(value: number | null): string | null {
@@ -174,15 +188,19 @@ export class UpNoteRepository {
   constructor(dbPath = resolveUpnoteDbPath()) {
     this.dbPath = dbPath;
 
-    if (!Bun.file(this.dbPath).exists()) {
+    if (!existsSync(this.dbPath)) {
       throw new Error(createMissingDbMessage(this.dbPath));
     }
 
-    this.db = new Database(this.dbPath, {
-      readonly: true,
-      create: false,
-      strict: true,
-    });
+    try {
+      this.db = new Database(this.dbPath, {
+        readonly: true,
+        create: false,
+        strict: true,
+      });
+    } catch (error) {
+      throw new Error(createOpenDbMessage(this.dbPath, error));
+    }
   }
 
   getResolvedDbPath(): string {

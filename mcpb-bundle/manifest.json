@@ -49,7 +49,7 @@
     "upnote_db": {
       "type": "file",
       "title": "UpNote Database",
-      "description": "Path to upnote.sqlite3. Leave empty to use the default UpNote desktop app location.",
+      "description": "Path to upnote.sqlite3. Use the file picker to select the file. If omitted, the default UpNote desktop app location is used.",
       "required": false,
       "default": "${HOME}/Library/Containers/com.getupnote.desktop/Data/Library/Application Support/UpNote/upnote.sqlite3"
     }
