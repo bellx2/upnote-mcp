@@ -62,7 +62,7 @@ macOS 版 Claude Desktop では、`bunx` ではなく `.mcpb` からインスト
 ファイル名の例:
 
 ```text
-upnote-mcp-0.2.6.mcpb
+upnote-mcp-0.2.7.mcpb
 ```
 
 ### Claude Desktop へのインストール

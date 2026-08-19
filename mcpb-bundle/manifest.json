@@ -3,7 +3,7 @@
   "manifest_version": "0.3",
   "name": "upnote-mcp",
   "display_name": "UpNote MCP",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "description": "Search, read, and create UpNote notes from Claude Desktop.",
   "long_description": "Unofficial MCP server for UpNote on macOS. Reads your local UpNote SQLite database (read-only) and exposes search, tag filtering, note retrieval, and safe note creation through UpNote's official URL scheme. Requires the UpNote desktop app.",
   "author": {

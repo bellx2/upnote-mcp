@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.7] - 2026-08-19
+
+### Fixed
+
+- Resolve UpNote database paths correctly for Claude Desktop MCPB installs
+- Expand `${HOME}` in `UPNOTE_DB` and use `os.homedir()` for the default path
+- Replace async `Bun.file().exists()` checks with synchronous filesystem checks
+- Improve error messages when SQLite cannot open the database file
+
 ## [0.2.6] - 2026-08-19
 
 ### Added
@@ -55,7 +64,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Simplified the published CLI entrypoint
 
-[Unreleased]: https://github.com/bellx2/upnote-mcp/compare/v0.2.6...HEAD
+[Unreleased]: https://github.com/bellx2/upnote-mcp/compare/v0.2.7...HEAD
+[0.2.7]: https://github.com/bellx2/upnote-mcp/compare/v0.2.6...v0.2.7
 [0.2.6]: https://github.com/bellx2/upnote-mcp/compare/v0.2.5...v0.2.6
 [0.2.5]: https://github.com/bellx2/upnote-mcp/compare/v0.2.4...v0.2.5
 [0.2.4]: https://github.com/bellx2/upnote-mcp/compare/v0.2.3...v0.2.4

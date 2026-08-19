@@ -85,7 +85,7 @@ Tagged releases include an `.mcpb` asset on [GitHub Releases](https://github.com
 Example file name:
 
 ```text
-upnote-mcp-0.2.6.mcpb
+upnote-mcp-0.2.7.mcpb
 ```
 
 ### Install in Claude Desktop
